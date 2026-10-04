@@ -11,8 +11,10 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onAnswerReceived, 
   const [transcript, setTranscript] = useState('');
   const [confidence, setConfidence] = useState(100);
   const [isSupportedBrowser, setIsSupportedBrowser] = useState(true);
+  const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
   const finalTranscriptRef = useRef('');
+  const listeningTimeoutRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -27,12 +29,30 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onAnswerReceived, 
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.language = 'en-US';
+    recognition.maxAlternatives = 1;
 
     recognition.onstart = () => {
       setIsRecording(true);
-      setTranscript('');
+      setIsListening(false);
+      setTranscript('Listening... speak now');
       finalTranscriptRef.current = '';
       console.log('🎤 Recording started...');
+
+      listeningTimeoutRef.current = setTimeout(() => {
+        setIsListening(true);
+        setTranscript('Listening... speak now (no speech detected yet)');
+      }, 2000);
+    };
+
+    recognition.onaudiostart = () => {
+      console.log('🎙️ Audio input started');
+    };
+
+    recognition.onsoundstart = () => {
+      console.log('🔊 Sound detected');
+      setIsListening(true);
+      setTranscript('Processing... speak more if needed');
+      if (listeningTimeoutRef.current) clearTimeout(listeningTimeoutRef.current);
     };
 
     recognition.onresult = (event: any) => {
@@ -52,46 +72,85 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onAnswerReceived, 
       }
 
       const displayText = finalTranscriptRef.current.trim() + (interimTranscript ? ' | ' + interimTranscript : '');
-      setTranscript(displayText);
+      setTranscript(displayText || 'Listening...');
       console.log('📝 Transcript:', displayText);
     };
 
     recognition.onerror = (event: any) => {
       console.error('🎤 Speech recognition error:', event.error);
+
+      if (event.error === 'no-speech') {
+        console.warn('⚠️ No speech detected. Make sure:');
+        console.warn('  1. Microphone is connected and enabled');
+        console.warn('  2. Browser has microphone permission');
+        console.warn('  3. Speak clearly and loud enough');
+        console.warn('  4. Check if microphone is muted');
+
+        setTranscript('No speech detected. Please check:\n1. Microphone is enabled\n2. You have browser permission\n3. Speak clearly and louder');
+      } else {
+        alert('Speech recognition error: ' + event.error);
+      }
+
       setIsRecording(false);
-      alert('Speech recognition error: ' + event.error);
     };
 
     recognition.onend = () => {
+      console.log('🛑 Recording ended');
       setIsRecording(false);
+      setIsListening(false);
+      if (listeningTimeoutRef.current) clearTimeout(listeningTimeoutRef.current);
       setTranscript(finalTranscriptRef.current.trim());
     };
 
     recognitionRef.current = recognition;
+
+    return () => {
+      if (listeningTimeoutRef.current) clearTimeout(listeningTimeoutRef.current);
+    };
   }, []);
 
   const startRecording = () => {
-    setTranscript('');
-    setConfidence(100);
-    finalTranscriptRef.current = '';
-    recognitionRef.current?.start();
+    try {
+      setTranscript('');
+      setConfidence(100);
+      setIsListening(false);
+      finalTranscriptRef.current = '';
+
+      if (!recognitionRef.current) {
+        alert('Speech Recognition not initialized. Please refresh the page.');
+        return;
+      }
+
+      recognitionRef.current.stop();
+      setTimeout(() => {
+        recognitionRef.current?.start();
+      }, 100);
+    } catch (err) {
+      console.error('Error starting recording:', err);
+      alert('Failed to start recording. Please check microphone permissions.');
+    }
   };
 
   const stopRecording = () => {
-    recognitionRef.current?.stop();
-    const cleanTranscript = finalTranscriptRef.current.trim();
-    console.log('🛑 Stop recording. Final transcript:', cleanTranscript, 'Length:', cleanTranscript.length);
+    try {
+      recognitionRef.current?.stop();
+      const cleanTranscript = finalTranscriptRef.current.trim();
+      console.log('🛑 Stop recording. Final transcript:', cleanTranscript, 'Length:', cleanTranscript.length);
 
-    if (cleanTranscript.length > 20) {
-      onAnswerReceived(cleanTranscript);
-    } else {
-      alert('Please provide a longer answer (minimum 20 characters). You said: "' + cleanTranscript + '"');
+      if (cleanTranscript.length > 20) {
+        onAnswerReceived(cleanTranscript);
+      } else {
+        alert('Please provide a longer answer (minimum 20 characters). You said: "' + cleanTranscript + '"');
+      }
+    } catch (err) {
+      console.error('Error stopping recording:', err);
     }
   };
 
   const clearRecording = () => {
     setTranscript('');
     setConfidence(100);
+    setIsListening(false);
     finalTranscriptRef.current = '';
   };
 
