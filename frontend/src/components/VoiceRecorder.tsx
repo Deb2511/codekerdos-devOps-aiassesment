@@ -12,6 +12,7 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onAnswerReceived, 
   const [confidence, setConfidence] = useState(100);
   const [isSupportedBrowser, setIsSupportedBrowser] = useState(true);
   const recognitionRef = useRef<any>(null);
+  const finalTranscriptRef = useRef('');
 
   useEffect(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -27,16 +28,15 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onAnswerReceived, 
     recognition.interimResults = true;
     recognition.language = 'en-US';
 
-    let interimTranscript = '';
-
     recognition.onstart = () => {
       setIsRecording(true);
       setTranscript('');
+      finalTranscriptRef.current = '';
       console.log('🎤 Recording started...');
     };
 
     recognition.onresult = (event: any) => {
-      interimTranscript = '';
+      let interimTranscript = '';
 
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcriptSegment = event.results[i][0].transcript;
@@ -44,57 +44,55 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onAnswerReceived, 
         const conf = Math.round(event.results[i][0].confidence * 100);
 
         if (isFinal) {
-          setTranscript((prev) => {
-            const cleaned = prev.split('|')[0] || '';
-            return cleaned + (cleaned ? ' ' : '') + transcriptSegment;
-          });
+          finalTranscriptRef.current += transcriptSegment + ' ';
           setConfidence(conf);
         } else {
           interimTranscript += transcriptSegment;
         }
       }
 
-      if (interimTranscript) {
-        setTranscript((prev) => {
-          const finalPart = prev.split('|')[0] || '';
-          return finalPart + (finalPart ? ' ' : '') + '| ' + interimTranscript;
-        });
-      }
+      const displayText = finalTranscriptRef.current.trim() + (interimTranscript ? ' | ' + interimTranscript : '');
+      setTranscript(displayText);
+      console.log('📝 Transcript:', displayText);
     };
 
     recognition.onerror = (event: any) => {
       console.error('🎤 Speech recognition error:', event.error);
       setIsRecording(false);
+      alert('Speech recognition error: ' + event.error);
     };
 
     recognition.onend = () => {
       setIsRecording(false);
-      setTranscript((prev) => prev.split('|')[0]);
+      setTranscript(finalTranscriptRef.current.trim());
     };
 
     recognitionRef.current = recognition;
   }, []);
 
   const startRecording = () => {
-    const cleaned = transcript.split('|')[0];
-    setTranscript(cleaned);
+    setTranscript('');
     setConfidence(100);
+    finalTranscriptRef.current = '';
     recognitionRef.current?.start();
   };
 
   const stopRecording = () => {
     recognitionRef.current?.stop();
-    const cleanTranscript = transcript.split('|')[0].trim();
+    const cleanTranscript = finalTranscriptRef.current.trim();
+    console.log('🛑 Stop recording. Final transcript:', cleanTranscript, 'Length:', cleanTranscript.length);
+
     if (cleanTranscript.length > 20) {
       onAnswerReceived(cleanTranscript);
     } else {
-      alert('Please provide a longer answer (minimum 20 characters)');
+      alert('Please provide a longer answer (minimum 20 characters). You said: "' + cleanTranscript + '"');
     }
   };
 
   const clearRecording = () => {
     setTranscript('');
     setConfidence(100);
+    finalTranscriptRef.current = '';
   };
 
   if (!isSupportedBrowser) {
