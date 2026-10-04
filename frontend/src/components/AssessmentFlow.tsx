@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Question } from '../types';
 import { Timer } from './Timer';
+import { VoiceRecorder } from './VoiceRecorder';
 import './AssessmentFlow.css';
 
 interface AssessmentFlowProps {
@@ -9,6 +10,8 @@ interface AssessmentFlowProps {
   onSubmit: (answers: Record<string, string>) => void;
   isLoading?: boolean;
 }
+
+type AnswerMode = 'text' | 'voice';
 
 export const AssessmentFlow: React.FC<AssessmentFlowProps> = ({
   questions,
@@ -19,8 +22,11 @@ export const AssessmentFlow: React.FC<AssessmentFlowProps> = ({
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [currentAnswer, setCurrentAnswer] = useState('');
   const [showConfirm, setShowConfirm] = useState(false);
+  const [answerMode, setAnswerMode] = useState<AnswerMode>('text');
 
   useEffect(() => {
+    if (answerMode !== 'text') return;
+
     const answerTextarea = document.getElementById('answer-input') as HTMLTextAreaElement;
     if (!answerTextarea) return;
 
@@ -72,7 +78,7 @@ export const AssessmentFlow: React.FC<AssessmentFlowProps> = ({
       answerTextarea.removeEventListener('dragover', handleDragOver);
       answerTextarea.removeEventListener('drop', handleDrop);
     };
-  }, []);
+  }, [answerMode]);
 
   const currentQuestion = questions[currentIndex];
   const answeredCount = Object.keys(answers).length;
@@ -121,6 +127,10 @@ export const AssessmentFlow: React.FC<AssessmentFlowProps> = ({
     } else {
       setShowConfirm(true);
     }
+  };
+
+  const handleVoiceAnswer = (transcript: string) => {
+    setCurrentAnswer(transcript);
   };
 
   if (showConfirm) {
@@ -185,20 +195,54 @@ export const AssessmentFlow: React.FC<AssessmentFlowProps> = ({
           </div>
 
           <div className="answer-section">
-            <label htmlFor="answer-input">Your Answer:</label>
-            <textarea
-              id="answer-input"
-              className="answer-input"
-              value={currentAnswer}
-              onChange={(e) => setCurrentAnswer(e.target.value)}
-              placeholder="Type your answer here... (be specific and practical)"
-              rows={8}
-              disabled={isLoading}
-              autoFocus
-            />
-            <small className="hint">
-              Provide a practical, scenario-based answer. Typos are okay, focus on demonstrating your understanding.
-            </small>
+            <div className="answer-header">
+              <label>Your Answer:</label>
+              <div className="mode-toggle">
+                <button
+                  className={`mode-btn ${answerMode === 'text' ? 'active' : ''}`}
+                  onClick={() => {
+                    setAnswerMode('text');
+                    setCurrentAnswer('');
+                  }}
+                  disabled={isLoading}
+                >
+                  📝 Text
+                </button>
+                <button
+                  className={`mode-btn ${answerMode === 'voice' ? 'active' : ''}`}
+                  onClick={() => {
+                    setAnswerMode('voice');
+                    setCurrentAnswer('');
+                  }}
+                  disabled={isLoading}
+                >
+                  🎤 Voice
+                </button>
+              </div>
+            </div>
+
+            {answerMode === 'text' ? (
+              <>
+                <textarea
+                  id="answer-input"
+                  className="answer-input"
+                  value={currentAnswer}
+                  onChange={(e) => setCurrentAnswer(e.target.value)}
+                  placeholder="Type your answer here... (be specific and practical)"
+                  rows={8}
+                  disabled={isLoading}
+                  autoFocus
+                />
+                <small className="hint">
+                  Provide a practical, scenario-based answer. Typos are okay, focus on demonstrating your understanding.
+                </small>
+              </>
+            ) : (
+              <VoiceRecorder
+                onAnswerReceived={handleVoiceAnswer}
+                isActive={!isLoading}
+              />
+            )}
           </div>
 
           <div className="button-group">
