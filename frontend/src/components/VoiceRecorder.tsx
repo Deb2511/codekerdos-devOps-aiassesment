@@ -11,10 +11,10 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onAnswerReceived, 
   const [transcript, setTranscript] = useState('');
   const [confidence, setConfidence] = useState(100);
   const [isSupportedBrowser, setIsSupportedBrowser] = useState(true);
-  const [isListening, setIsListening] = useState(false);
+  const [, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
   const finalTranscriptRef = useRef('');
-  const listeningTimeoutRef = useRef<NodeJS.Timeout>();
+  const listeningTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;

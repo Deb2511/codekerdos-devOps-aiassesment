@@ -58,12 +58,13 @@ export async function startJDAssessment(
 
 export async function submitAnswers(
   assessmentId: string,
-  answers: Record<string, string>
+  answers: Record<string, string>,
+  answerSources: Record<string, 'voice' | 'typed'> = {}
 ): Promise<SubmitAnswersResponse> {
   const response = await fetch(`${API_URL}/assessments/${assessmentId}/submit`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ answers }),
+    body: JSON.stringify({ answers, answer_sources: answerSources }),
   });
 
   if (!response.ok) {

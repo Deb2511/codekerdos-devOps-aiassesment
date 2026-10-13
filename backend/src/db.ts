@@ -85,6 +85,18 @@ export async function initializeDatabase(): Promise<void> {
       `);
     }
 
+    if (!columnNames.includes('score_percent')) {
+      await client.query(`
+        ALTER TABLE assessments ADD COLUMN score_percent INTEGER
+      `);
+    }
+
+    if (!columnNames.includes('repair_log')) {
+      await client.query(`
+        ALTER TABLE assessments ADD COLUMN repair_log JSONB
+      `);
+    }
+
     // Create leaderboard_entries table for monthly snapshots
     await client.query(`
       CREATE TABLE IF NOT EXISTS leaderboard_entries (

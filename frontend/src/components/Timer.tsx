@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 interface TimerProps {
   initialSeconds: number;
@@ -8,27 +8,32 @@ interface TimerProps {
 
 export const Timer: React.FC<TimerProps> = ({ initialSeconds, onTimeUp, isActive }) => {
   const [seconds, setSeconds] = useState(initialSeconds);
+  const onTimeUpRef = useRef(onTimeUp);
+  const firedRef = useRef(false);
 
+  // Always call the latest handler without restarting the countdown on every render
+  useEffect(() => {
+    onTimeUpRef.current = onTimeUp;
+  }, [onTimeUp]);
+
+  // Count down once per second while active
   useEffect(() => {
     if (!isActive) return;
 
-    if (seconds === 0) {
-      onTimeUp();
-      return;
-    }
-
     const interval = setInterval(() => {
-      setSeconds((prev) => {
-        if (prev <= 1) {
-          onTimeUp();
-          return 0;
-        }
-        return prev - 1;
-      });
+      setSeconds((prev) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [seconds, isActive, onTimeUp]);
+  }, [isActive]);
+
+  // Fire time-up exactly once, when the clock reaches zero
+  useEffect(() => {
+    if (seconds === 0 && isActive && !firedRef.current) {
+      firedRef.current = true;
+      onTimeUpRef.current();
+    }
+  }, [seconds, isActive]);
 
   const minutes = Math.floor(seconds / 60);
   const secs = seconds % 60;

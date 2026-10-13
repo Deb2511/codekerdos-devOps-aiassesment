@@ -147,14 +147,17 @@ export const App: React.FC = () => {
   };
 
   // Assessment submission handler
-  const handleAssessmentSubmit = async (answers: Record<string, string>) => {
+  const handleAssessmentSubmit = async (
+    answers: Record<string, string>,
+    answerSources: Record<string, 'voice' | 'typed'>
+  ) => {
     if (!assessmentState) return;
 
     setIsLoading(true);
     setError('');
 
     try {
-      const response = await submitAnswers(assessmentState.assessmentId, answers);
+      const response = await submitAnswers(assessmentState.assessmentId, answers, answerSources);
 
       setResultsState({
         assessmentType: assessmentState.type,

@@ -1,6 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { config } from '../config';
-import { generateQuestions, evaluateAnswers } from '../services/claudeService';
+import { generateQuestions, evaluateAnswers, EvaluationResult } from '../services/claudeService';
+import { EvaluationItem } from '../utils/prompts';
+import { buildTopicPlan, buildFocusPlan } from '../utils/topicPlan';
 import { getOrCreateStudent, createAssessment, updateAssessmentWithResults, getAssessmentById } from '../services/dbService';
 import { validateEmail, validateName, validateDifficulty, validateTopics, validateNumQuestions, validateJDText } from '../utils/validation';
 
@@ -24,6 +26,7 @@ interface JDAssessmentRequest {
 
 interface SubmitAnswersRequest {
   answers: Record<string, string>;
+  answer_sources?: Record<string, 'voice' | 'typed'>;
 }
 
 // Start self-assessment
@@ -52,7 +55,9 @@ router.post('/start', async (req: Request<{}, {}, StartAssessmentRequest>, res: 
     await getOrCreateStudent(name, email);
 
     // Generate questions
-    const { questions, tokens } = await generateQuestions(difficulty as 'junior' | 'senior', topics, 'self', total_questions);
+    const topicPlan = buildTopicPlan(topics, total_questions);
+    const focusPlan = buildFocusPlan(total_questions);
+    const { questions, tokens } = await generateQuestions(difficulty as 'junior' | 'senior', topics, 'self', total_questions, undefined, topicPlan, focusPlan);
 
     // Create assessment record
     const assessment = await createAssessment({
@@ -138,7 +143,7 @@ router.post('/jd-start', async (req: Request<{}, {}, JDAssessmentRequest>, res: 
 router.post('/:assessment_id/submit', async (req: Request<{ assessment_id: string }, {}, SubmitAnswersRequest>, res: Response) => {
   try {
     const { assessment_id } = req.params;
-    const { answers } = req.body;
+    const { answers, answer_sources = {} } = req.body;
 
     // Get assessment
     const assessment = await getAssessmentById(assessment_id);
@@ -150,20 +155,38 @@ router.post('/:assessment_id/submit', async (req: Request<{ assessment_id: strin
     if (!answers || typeof answers !== 'object') {
       return res.status(400).json({ error: 'Invalid answers format' });
     }
+    if (typeof answer_sources !== 'object' || answer_sources === null) {
+      return res.status(400).json({ error: 'Invalid answer_sources format' });
+    }
 
-    // Build Q&A pairs
-    const qaPairs = assessment.questions.map((q) => ({
+    // Spoken answers are repaired by the evaluator; typed answers are scored as written
+    const sourceOf = (qId: number): 'voice' | 'typed' => (answer_sources[qId.toString()] === 'voice' ? 'voice' : 'typed');
+    const items: EvaluationItem[] = assessment.questions.map((q) => ({
+      id: q.id,
       question: q.question,
+      topic: q.topic,
       answer: answers[q.id.toString()] || '',
+      source: sourceOf(q.id),
+      repair: sourceOf(q.id) === 'voice' ? 'yes' : 'no',
     }));
 
-    // Evaluate answers
-    const { result, tokens } = await evaluateAnswers(assessment.difficulty, assessment.topics, qaPairs);
+    const { result, tokens } = await evaluateAnswers(assessment.difficulty, assessment.topics, items);
 
-    // Calculate base score as sum of all question scores (0-100 each)
-    const questionScores = assessment.questions.map((q) => result.scores[`q${q.id}`] || 0);
+    // Per-question scores, clamped to 0-10 whole numbers
+    const scoreOf = (qId: number): number => {
+      const entry = result.questions.find((q) => q.id === qId);
+      const raw = Number(entry?.score);
+      if (!Number.isFinite(raw)) return 0;
+      return Math.min(10, Math.max(0, Math.round(raw)));
+    };
+    const feedbackOf = (qId: number): string => {
+      const entry = result.questions.find((q) => q.id === qId);
+      return entry?.feedback?.trim() || 'No feedback was generated for this answer.';
+    };
+
+    const questionScores = assessment.questions.map((q) => scoreOf(q.id));
     const baseScore = questionScores.reduce((a, b) => a + b, 0);
-    const maxPossibleScore = assessment.questions.length * 100;
+    const maxPossibleScore = assessment.questions.length * 10;
 
     // Calculate plagiarism deduction
     const plagiarismPenaltyMap: Record<string, number> = {
@@ -176,13 +199,37 @@ router.post('/:assessment_id/submit', async (req: Request<{ assessment_id: strin
     const plagiarismPenalty = plagiarismPenaltyMap[result.plagiarism_risk] || 0;
     const deductionAmount = Math.round(baseScore * plagiarismPenalty);
     const finalScore = baseScore - deductionAmount;
+    const scorePercent = Math.round((finalScore / maxPossibleScore) * 100);
 
-    // Calculate per-topic scores
+    // Per-topic score as a percentage (average of 0-10 scores, times 10)
     const perTopicScores: Record<string, number> = {};
     assessment.topics.forEach((topic) => {
       const topicQuestions = assessment.questions.filter((q) => q.topic === topic);
-      const topicScores = topicQuestions.map((q) => result.scores[`q${q.id}`] || 0);
-      perTopicScores[topic] = Math.round(topicScores.reduce((a, b) => a + b, 0) / topicScores.length);
+      const topicScores = topicQuestions.map((q) => scoreOf(q.id));
+      perTopicScores[topic] = Math.round((topicScores.reduce((a, b) => a + b, 0) / topicScores.length) * 10);
+    });
+
+    const individualScores: Record<string, number> = {};
+    const individualFeedback: Record<string, string> = {};
+    assessment.questions.forEach((q) => {
+      individualScores[`q${q.id}`] = scoreOf(q.id);
+      individualFeedback[`q${q.id}`] = feedbackOf(q.id);
+    });
+
+    // Audit trail: what the candidate said, what the evaluator changed, and what it could not resolve
+    const repairLog = items.map((item) => {
+      const entry = result.questions.find((q) => q.id === item.id);
+      const repaired = typeof entry?.repaired === 'string' && entry.repaired.trim() !== '' ? entry.repaired : item.answer;
+      const usedRepair = item.source === 'voice' && repaired !== item.answer;
+      return {
+        question_id: item.id,
+        source: item.source,
+        status: item.source === 'typed' ? 'skipped' : 'applied',
+        repaired: item.source === 'voice' ? repaired : item.answer,
+        changes: item.source === 'voice' && Array.isArray(entry?.changes) ? entry.changes : [],
+        unclear: item.source === 'voice' && Array.isArray(entry?.unclear) ? entry.unclear : [],
+        changed: usedRepair,
+      };
     });
 
     // Update assessment with results
@@ -192,19 +239,22 @@ router.post('/:assessment_id/submit', async (req: Request<{ assessment_id: strin
       base_score: baseScore,
       final_score: finalScore,
       max_possible_score: maxPossibleScore,
+      score_percent: scorePercent,
       plagiarism_deduction_amount: deductionAmount,
       plagiarism_deduction_percent: plagiarismPenalty * 100,
       per_topic_scores: perTopicScores,
       feedback_json: {
-        feedback: result.feedback,
-        individual_scores: result.scores,
+        feedback: result.overall_feedback,
+        individual_scores: individualScores,
+        individual_feedback: individualFeedback,
       },
+      repair_log: repairLog,
       plagiarism_risk: result.plagiarism_risk,
       plagiarism_notes: result.plagiarism_notes || '',
       tokens_used: {
         generation: assessment.questions.length * 100, // Approximate
         evaluation: tokens,
-        total: tokens,
+        total: tokens.total_tokens,
       },
     });
 
@@ -213,11 +263,13 @@ router.post('/:assessment_id/submit', async (req: Request<{ assessment_id: strin
       base_score: updatedAssessment.base_score,
       final_score: updatedAssessment.final_score,
       max_possible_score: updatedAssessment.max_possible_score,
+      score_percent: updatedAssessment.score_percent,
       plagiarism_deduction_amount: updatedAssessment.plagiarism_deduction_amount,
       plagiarism_deduction_percent: updatedAssessment.plagiarism_deduction_percent,
       per_topic_scores: updatedAssessment.per_topic_scores,
       feedback: updatedAssessment.feedback_json.feedback,
       individual_scores: updatedAssessment.feedback_json.individual_scores,
+      individual_feedback: updatedAssessment.feedback_json.individual_feedback,
       plagiarism_risk: updatedAssessment.plagiarism_risk,
       plagiarism_notes: updatedAssessment.plagiarism_notes,
       completed_at: updatedAssessment.completed_at,

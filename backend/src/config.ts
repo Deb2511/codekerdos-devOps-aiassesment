@@ -15,6 +15,8 @@ export const config = {
   CLAUDE_MODEL: 'claude-haiku-4-5-20251001',
   CLAUDE_TIMEOUT_SECS: parseInt(process.env.CLAUDE_TIMEOUT_SECS || '15'),
   CLAUDE_MAX_TOKENS: 2000,
+  EVALUATION_MAX_TOKENS: 6000,
+  EVALUATION_TIMEOUT_SECS: 90,
 
   // Assessment Configuration
   ASSESSMENT_TIMEOUT_MINS: 5,

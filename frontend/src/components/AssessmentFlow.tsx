@@ -7,11 +7,14 @@ import './AssessmentFlow.css';
 interface AssessmentFlowProps {
   assessmentId: string;
   questions: Question[];
-  onSubmit: (answers: Record<string, string>) => void;
+  onSubmit: (answers: Record<string, string>, answerSources: Record<string, 'voice' | 'typed'>) => void;
   isLoading?: boolean;
 }
 
 type AnswerMode = 'text' | 'voice';
+
+// Each question gets its own time budget
+const QUESTION_SECONDS = 300;
 
 export const AssessmentFlow: React.FC<AssessmentFlowProps> = ({
   questions,
@@ -23,6 +26,8 @@ export const AssessmentFlow: React.FC<AssessmentFlowProps> = ({
   const [currentAnswer, setCurrentAnswer] = useState('');
   const [showConfirm, setShowConfirm] = useState(false);
   const [answerMode, setAnswerMode] = useState<AnswerMode>('text');
+  // Tracks how each question's current answer was entered, so the backend knows which ones to repair
+  const [answerSources, setAnswerSources] = useState<Record<string, 'voice' | 'typed'>>({});
 
   useEffect(() => {
     if (answerMode !== 'text') return;
@@ -114,7 +119,7 @@ export const AssessmentFlow: React.FC<AssessmentFlowProps> = ({
   };
 
   const handleSubmit = () => {
-    onSubmit(answers);
+    onSubmit(answers, answerSources);
   };
 
   const handleSkip = () => {
@@ -131,6 +136,7 @@ export const AssessmentFlow: React.FC<AssessmentFlowProps> = ({
 
   const handleVoiceAnswer = (transcript: string) => {
     setCurrentAnswer(transcript);
+    setAnswerSources((prev) => ({ ...prev, [currentQuestion.id]: 'voice' }));
   };
 
   if (showConfirm) {
@@ -183,7 +189,8 @@ export const AssessmentFlow: React.FC<AssessmentFlowProps> = ({
         <div className="flow-card">
           <div className="timer-container">
             <Timer
-              initialSeconds={300}
+              key={currentIndex}
+              initialSeconds={QUESTION_SECONDS}
               onTimeUp={handleTimeUp}
               isActive={true}
             />
@@ -227,7 +234,10 @@ export const AssessmentFlow: React.FC<AssessmentFlowProps> = ({
                   id="answer-input"
                   className="answer-input"
                   value={currentAnswer}
-                  onChange={(e) => setCurrentAnswer(e.target.value)}
+                  onChange={(e) => {
+                    setCurrentAnswer(e.target.value);
+                    setAnswerSources((prev) => ({ ...prev, [currentQuestion.id]: 'typed' }));
+                  }}
                   placeholder="Type your answer here... (be specific and practical)"
                   rows={8}
                   disabled={isLoading}

@@ -32,7 +32,7 @@ export const ResultsPage: React.FC<ResultsPageProps> = ({
     return 'D';
   };
 
-  const scorePercentage = getScorePercentage(results.final_score || results.score, results.max_possible_score || 100);
+  const scorePercentage = results.score_percent ?? getScorePercentage(results.final_score || results.score, results.max_possible_score || 100);
   const hasPlaguarismDeduction = (results.plagiarism_deduction_percent || 0) > 0;
 
   return (
@@ -91,7 +91,7 @@ export const ResultsPage: React.FC<ResultsPageProps> = ({
                     }}
                   ></div>
                 </div>
-                <div className="topic-score">{score}</div>
+                <div className="topic-score">{score}%</div>
               </div>
             ))}
           </div>
@@ -105,18 +105,24 @@ export const ResultsPage: React.FC<ResultsPageProps> = ({
           </div>
         </div>
 
-        {/* Individual Scores */}
+        {/* Individual Scores and Feedback */}
         <div className="individual-scores-section">
-          <h3>Question-by-Question Scores</h3>
-          <div className="individual-scores">
-            {Object.entries(results.individual_scores).map(([question, score]) => (
-              <div key={question} className="individual-score-item">
-                <div className="score-badge" style={{ backgroundColor: getScoreColor(score as number) }}>
-                  {score as number}
+          <h3>Question-by-Question Feedback</h3>
+          {Object.entries(results.individual_scores)
+            .sort(([a], [b]) => Number(a.slice(1)) - Number(b.slice(1)))
+            .map(([question, score], idx) => (
+              <div key={question} className="question-feedback-card">
+                <div className="question-feedback-header">
+                  <span className="question-feedback-title">Question {idx + 1}</span>
+                  <span className="score-badge" style={{ backgroundColor: getScoreColor((score as number) * 10) }}>
+                    {score as number}/10
+                  </span>
                 </div>
+                <p className="question-feedback-text">
+                  {results.individual_feedback?.[question] ?? 'No feedback available.'}
+                </p>
               </div>
             ))}
-          </div>
         </div>
 
         {/* Plagiarism Risk */}

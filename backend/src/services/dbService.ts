@@ -19,6 +19,8 @@ interface Assessment {
   base_score?: number;
   final_score?: number;
   max_possible_score?: number;
+  score_percent?: number;
+  repair_log?: any;
   plagiarism_deduction_amount?: number;
   plagiarism_deduction_percent?: number;
   per_topic_scores: Record<string, number>;
@@ -91,6 +93,8 @@ export async function updateAssessmentWithResults(
     base_score?: number;
     final_score?: number;
     max_possible_score?: number;
+    score_percent?: number;
+    repair_log?: any;
     plagiarism_deduction_amount?: number;
     plagiarism_deduction_percent?: number;
     per_topic_scores: Record<string, number>;
@@ -106,7 +110,8 @@ export async function updateAssessmentWithResults(
         max_possible_score = $6, plagiarism_deduction_amount = $7,
         plagiarism_deduction_percent = $8, per_topic_scores = $9,
         feedback_json = $10, plagiarism_risk = $11, plagiarism_notes = $12,
-        tokens_used = $13, completed_at = NOW()
+        tokens_used = $13, score_percent = $14, repair_log = $15,
+        completed_at = NOW()
     WHERE id = $1
     RETURNING *`,
     [
@@ -123,6 +128,8 @@ export async function updateAssessmentWithResults(
       data.plagiarism_risk,
       data.plagiarism_notes,
       JSON.stringify(data.tokens_used),
+      data.score_percent,
+      JSON.stringify(data.repair_log ?? []),
     ]
   );
 

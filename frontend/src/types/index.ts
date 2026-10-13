@@ -47,11 +47,13 @@ export interface SubmitAnswersResponse {
   base_score?: number;
   final_score?: number;
   max_possible_score?: number;
+  score_percent?: number;
   plagiarism_deduction_amount?: number;
   plagiarism_deduction_percent?: number;
   per_topic_scores: Record<string, number>;
   feedback: string;
   individual_scores: Record<string, number>;
+  individual_feedback?: Record<string, string>;
   plagiarism_risk: 'none' | 'low' | 'high';
   plagiarism_notes: string;
   completed_at: string;
