@@ -1,5 +1,5 @@
 .leaderboard-page {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #16203b 0%, #0f1628 100%);
   min-height: 100vh;
   padding: 2rem;
 }
@@ -42,7 +42,7 @@
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  color: #667eea;
+  color: #16203b;
   transition: all 0.3s ease;
 }
 
@@ -97,7 +97,7 @@
 }
 
 .empty-state p {
-  color: #667eea;
+  color: #16203b;
   font-size: 1.1rem;
   margin: 0.5rem 0;
 }
@@ -115,7 +115,7 @@
   grid-template-columns: 80px 1fr 150px 150px;
   gap: 1rem;
   padding: 1.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #16203b 0%, #0f1628 100%);
   color: white;
   font-weight: 600;
   border-bottom: 2px solid #f0f0f0;
@@ -212,7 +212,7 @@
 
 .btn-primary {
   background: white;
-  color: #667eea;
+  color: #16203b;
 }
 
 .btn-primary:hover {

@@ -33,7 +33,7 @@ body {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #16203b 0%, #0f1628 100%);
   padding: 2rem;
 }
 
@@ -70,13 +70,13 @@ body {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #16203b 0%, #0f1628 100%);
   color: white;
 }
 
 .btn-primary:hover {
   transform: scale(1.02);
-  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 5px 15px rgba(22, 32, 59, 0.4);
 }
 
 /* Scrollbar Styling */
@@ -90,17 +90,17 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #667eea;
+  background: #16203b;
   border-radius: 5px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #764ba2;
+  background: #0f1628;
 }
 
 /* Selection color */
 ::selection {
-  background-color: rgba(102, 126, 234, 0.2);
+  background-color: rgba(22, 32, 59, 0.2);
   color: #333;
 }
 

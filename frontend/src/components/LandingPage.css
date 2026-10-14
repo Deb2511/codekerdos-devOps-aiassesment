@@ -3,7 +3,7 @@
   margin: 0 auto;
   padding: 2rem;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #16203b 0%, #0f1628 100%);
 }
 
 .landing-header {
@@ -83,7 +83,7 @@
   padding: 1rem;
   border-radius: 6px;
   margin: 1rem 0;
-  border-left: 4px solid #667eea;
+  border-left: 4px solid #16203b;
 }
 
 .jd-info p {
@@ -117,13 +117,13 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #16203b 0%, #0f1628 100%);
   color: white;
 }
 
 .btn-primary:hover {
   transform: scale(1.02);
-  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 5px 15px rgba(22, 32, 59, 0.4);
 }
 
 @media (max-width: 768px) {
@@ -142,4 +142,28 @@
   .topics-list {
     grid-template-columns: 1fr;
   }
+}
+
+/* Brand logo and footer */
+.brand-logo {
+  display: block;
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 12px;
+}
+
+.landing-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 40px;
+  padding: 16px;
+  color: #ffffff;
+  font-size: 0.9rem;
+}
+
+.footer-logo {
+  width: 32px;
+  height: 32px;
 }

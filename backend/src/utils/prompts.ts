@@ -58,6 +58,8 @@ export const SCORING_RUBRIC = {
   },
 };
 
+import { config } from '../config';
+
 export function generateQuestionPrompt(
   difficulty: 'junior' | 'senior',
   topics: string[],
@@ -103,9 +105,16 @@ Return as valid JSON array only, no markdown formatting:
 ]`;
   }
 
+  const topicDescriptions = config.SELF_ASSESSMENT_TOPICS as Record<string, string>;
+  const scopeLines = topics
+    .map((t) => `- ${t}: ${topicDescriptions[t] ?? t}`)
+    .join('\n');
+
   return `You are an expert DevOps/SRE interviewer generating scenario-based technical questions for a self-assessment.
 
 Topics: ${topicsStr}
+Topic scope (each question must fall within its topic's scope):
+${scopeLines}
 Difficulty Level: ${difficulty}
 Expected Competencies: ${guidance.keywords}
 

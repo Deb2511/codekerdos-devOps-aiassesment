@@ -203,7 +203,7 @@ export const App: React.FC = () => {
     return (
       <div className="error-container">
         <div className="error-box">
-          <h2>❌ Error</h2>
+          <h2>Error</h2>
           <p>{error}</p>
           <button className="btn btn-primary" onClick={() => setState('landing')}>
             Back to Home

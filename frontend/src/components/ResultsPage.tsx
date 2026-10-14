@@ -67,10 +67,10 @@ export const ResultsPage: React.FC<ResultsPageProps> = ({
             <h2>Assessment Complete!</h2>
             <p className="score-message">
               {scorePercentage >= 80
-                ? '🎉 Excellent performance! Strong understanding demonstrated.'
+                ? 'Excellent performance! Strong understanding demonstrated.'
                 : scorePercentage >= 70
-                  ? '👍 Good job! Solid understanding with some areas to improve.'
-                  : '📚 Keep learning! Focus on the growth areas below.'}
+                  ? 'Good job! Solid understanding with some areas to improve.'
+                  : 'Keep learning! Focus on the growth areas below.'}
             </p>
           </div>
         </div>
@@ -128,7 +128,7 @@ export const ResultsPage: React.FC<ResultsPageProps> = ({
         {/* Plagiarism Risk */}
         {results.plagiarism_risk !== 'none' && (
           <div className={`plagiarism-section plagiarism-${results.plagiarism_risk}`}>
-            <h3>⚠️ Plagiarism Check</h3>
+            <h3>Plagiarism Check</h3>
             <p>
               <strong>Risk Level:</strong> {results.plagiarism_risk.toUpperCase()}
             </p>
@@ -143,7 +143,7 @@ export const ResultsPage: React.FC<ResultsPageProps> = ({
         {/* Action Buttons */}
         <div className="results-actions">
           <button className="btn btn-primary" onClick={onNewAssessment}>
-            {assessmentType === 'self' ? '📚 Take Another Self Assessment' : '💼 Take Another JD Assessment'}
+            {assessmentType === 'self' ? 'Take Another Self Assessment' : 'Take Another JD Assessment'}
           </button>
           <button className="btn btn-secondary" onClick={() => window.location.href = '/'}>
             ← Back to Home

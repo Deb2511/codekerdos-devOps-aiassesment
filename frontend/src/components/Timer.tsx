@@ -40,8 +40,8 @@ export const Timer: React.FC<TimerProps> = ({ initialSeconds, onTimeUp, isActive
   const isWarning = seconds < 30;
 
   return (
-    <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: isWarning ? '#e74c3c' : '#3498db' }}>
-      ⏱️ {minutes}:{secs.toString().padStart(2, '0')}
+    <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: isWarning ? '#e74c3c' : '#16203b' }}>
+      {minutes}:{secs.toString().padStart(2, '0')}
     </div>
   );
 };

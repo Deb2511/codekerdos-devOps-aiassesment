@@ -166,7 +166,7 @@ export const AssessmentFlow: React.FC<AssessmentFlowProps> = ({
               ← Back
             </button>
             <button className="btn btn-primary" onClick={handleSubmit} disabled={isLoading}>
-              {isLoading ? '⏳ Evaluating...' : 'Submit & Get Results'}
+              {isLoading ? 'Evaluating...' : 'Submit & Get Results'}
             </button>
           </div>
         </div>
@@ -213,7 +213,7 @@ export const AssessmentFlow: React.FC<AssessmentFlowProps> = ({
                   }}
                   disabled={isLoading}
                 >
-                  📝 Text
+                  Text
                 </button>
                 <button
                   className={`mode-btn ${answerMode === 'voice' ? 'active' : ''}`}
@@ -223,7 +223,7 @@ export const AssessmentFlow: React.FC<AssessmentFlowProps> = ({
                   }}
                   disabled={isLoading}
                 >
-                  🎤 Voice
+                  Voice
                 </button>
               </div>
             </div>
@@ -249,6 +249,7 @@ export const AssessmentFlow: React.FC<AssessmentFlowProps> = ({
               </>
             ) : (
               <VoiceRecorder
+                key={currentIndex}
                 onAnswerReceived={handleVoiceAnswer}
                 isActive={!isLoading}
               />

@@ -18,7 +18,7 @@
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(90deg, #16203b 0%, #15c0fd 100%);
   transition: width 0.3s ease;
 }
 
@@ -58,7 +58,7 @@
 
 .question-topic {
   display: inline-block;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #16203b 0%, #0f1628 100%);
   color: white;
   padding: 0.5rem 1rem;
   border-radius: 6px;
@@ -117,8 +117,8 @@
 
 .mode-btn.active {
   background: white;
-  color: #667eea;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+  color: #16203b;
+  box-shadow: 0 2px 8px rgba(22, 32, 59, 0.15);
 }
 
 .mode-btn:disabled {
@@ -139,8 +139,8 @@
 
 .answer-input:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: #16203b;
+  box-shadow: 0 0 0 3px rgba(22, 32, 59, 0.1);
 }
 
 .answer-input:disabled {
@@ -182,13 +182,13 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #16203b 0%, #0f1628 100%);
   color: white;
 }
 
 .btn-primary:hover:not(:disabled) {
   transform: scale(1.02);
-  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 5px 15px rgba(22, 32, 59, 0.4);
 }
 
 .btn:disabled {
@@ -245,7 +245,7 @@
 
 .stat-value {
   display: block;
-  color: #667eea;
+  color: #16203b;
   font-size: 2rem;
   font-weight: 700;
 }

@@ -36,9 +36,9 @@ export const Leaderboard: React.FC = () => {
   };
 
   const getMedalEmoji = (rank: number): string => {
-    if (rank === 1) return '🥇';
-    if (rank === 2) return '🥈';
-    if (rank === 3) return '🥉';
+    if (rank === 1) return '';
+    if (rank === 2) return '';
+    if (rank === 3) return '';
     return '';
   };
 
@@ -75,7 +75,7 @@ export const Leaderboard: React.FC = () => {
     <div className="leaderboard-page">
       <div className="leaderboard-container">
         <div className="leaderboard-header">
-          <h1>🏆 Monthly DevOps Assessment Leaderboard</h1>
+          <h1>Monthly DevOps Assessment Leaderboard</h1>
           <p className="subtitle">Celebrating top performers and encouraging participation</p>
         </div>
 
@@ -97,13 +97,13 @@ export const Leaderboard: React.FC = () => {
 
         {error && (
           <div className="error-message">
-            <p>⚠️ {error}</p>
+            <p>{error}</p>
           </div>
         )}
 
         {!loading && !error && leaderboard.length === 0 && (
           <div className="empty-state">
-            <p>📊 No assessments completed yet this month.</p>
+            <p>No assessments completed yet this month.</p>
             <p>Start an assessment to appear on the leaderboard!</p>
           </div>
         )}
@@ -135,7 +135,7 @@ export const Leaderboard: React.FC = () => {
         )}
 
         <div className="leaderboard-footer">
-          <p>💡 Higher scores and more attempts = higher rankings!</p>
+          <p>Higher scores and more attempts = higher rankings!</p>
           <p>Take another assessment to improve your position.</p>
         </div>
 

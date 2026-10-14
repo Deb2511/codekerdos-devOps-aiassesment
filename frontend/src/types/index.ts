@@ -69,10 +69,11 @@ export const TOPICS = {
   kubernetes: 'Kubernetes architecture, deployments, and troubleshooting',
   cicd: 'CI/CD pipeline design, automation, and best practices',
   observability: 'Monitoring, logging, metrics, and observability tools',
+  sre: 'Site reliability engineering: SLOs and error budgets, incident response and postmortems, on-call and alerting, capacity planning, reliability design, toil reduction, and failure testing',
 };
 
 export const TOPIC_LIST = Object.entries(TOPICS).map(([key, value]) => ({
   key: key as keyof typeof TOPICS,
-  label: key.charAt(0).toUpperCase() + key.slice(1),
+  label: key.toUpperCase(),
   description: value,
 }));

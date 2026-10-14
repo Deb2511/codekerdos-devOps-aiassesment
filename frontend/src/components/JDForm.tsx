@@ -104,7 +104,6 @@ export const JDForm: React.FC<JDFormProps> = ({ onNext, onBack, isLoading = fals
               />
               <span>
                 <strong>6 Questions</strong>
-                <small>600 max points (≈10 min)</small>
               </span>
             </label>
             <label className="radio-option">
@@ -118,7 +117,6 @@ export const JDForm: React.FC<JDFormProps> = ({ onNext, onBack, isLoading = fals
               />
               <span>
                 <strong>8 Questions</strong>
-                <small>800 max points (≈13 min)</small>
               </span>
             </label>
             <label className="radio-option">
@@ -132,14 +130,13 @@ export const JDForm: React.FC<JDFormProps> = ({ onNext, onBack, isLoading = fals
               />
               <span>
                 <strong>10 Questions</strong>
-                <small>1000 max points (≈17 min)</small>
               </span>
             </label>
           </div>
         </div>
 
         <div className="form-tips">
-          <h4>💡 Tips for best results:</h4>
+          <h4>Tips for best results:</h4>
           <ul>
             <li>Include key responsibilities and technical requirements</li>
             <li>Mention specific tools, frameworks, and technologies</li>
@@ -153,7 +150,7 @@ export const JDForm: React.FC<JDFormProps> = ({ onNext, onBack, isLoading = fals
             ← Back
           </button>
           <button className="btn btn-primary" onClick={handleNext} disabled={isLoading || charCount < 50}>
-            {isLoading ? '⏳ Generating Questions...' : 'Generate Assessment Questions →'}
+            {isLoading ? 'Generating Questions...' : 'Generate Assessment Questions →'}
           </button>
         </div>
       </div>

@@ -33,7 +33,8 @@ export const config = {
     'docker': 'Container fundamentals, images, and container networking',
     'kubernetes': 'Kubernetes architecture, deployments, and troubleshooting',
     'cicd': 'CI/CD pipeline design, automation, and best practices',
-    'observability': 'Monitoring, logging, metrics, and observability tools'
+    'observability': 'Monitoring, logging, metrics, and observability tools',
+    'sre': 'Site reliability engineering: SLOs and error budgets, incident response and postmortems, on-call and alerting, capacity planning, reliability design, toil reduction, and failure testing'
   },
 
   // Difficulty levels

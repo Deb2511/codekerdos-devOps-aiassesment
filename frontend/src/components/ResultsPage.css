@@ -1,5 +1,5 @@
 .results-page {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #16203b 0%, #0f1628 100%);
   min-height: 100vh;
   padding: 2rem;
 }
@@ -129,7 +129,7 @@
   padding: 1rem;
   background: #f9f9f9;
   border-radius: 8px;
-  border-left: 4px solid #667eea;
+  border-left: 4px solid #16203b;
 }
 
 .topic-name {
@@ -154,7 +154,7 @@
 .topic-score {
   text-align: right;
   font-weight: 700;
-  color: #667eea;
+  color: #16203b;
 }
 
 .feedback-section {
@@ -173,7 +173,7 @@
 
 .feedback-box {
   background: #f9f9f9;
-  border-left: 4px solid #667eea;
+  border-left: 4px solid #16203b;
   padding: 1.5rem;
   border-radius: 8px;
   line-height: 1.8;
@@ -265,13 +265,13 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #16203b 0%, #0f1628 100%);
   color: white;
 }
 
 .btn-primary:hover {
   transform: scale(1.02);
-  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 5px 15px rgba(22, 32, 59, 0.4);
 }
 
 .btn-secondary {
@@ -281,8 +281,8 @@
 }
 
 .btn-secondary:hover {
-  border-color: #667eea;
-  color: #667eea;
+  border-color: #16203b;
+  color: #16203b;
 }
 
 @media (max-width: 768px) {

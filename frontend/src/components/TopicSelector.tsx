@@ -97,7 +97,6 @@ export const TopicSelector: React.FC<TopicSelectorProps> = ({ onNext, onBack }) 
               />
               <span>
                 <strong>6 Questions</strong>
-                <small>600 max points (≈10 min)</small>
               </span>
             </label>
             <label className="radio-option">
@@ -110,7 +109,6 @@ export const TopicSelector: React.FC<TopicSelectorProps> = ({ onNext, onBack }) 
               />
               <span>
                 <strong>8 Questions</strong>
-                <small>800 max points (≈13 min)</small>
               </span>
             </label>
             <label className="radio-option">
@@ -123,7 +121,6 @@ export const TopicSelector: React.FC<TopicSelectorProps> = ({ onNext, onBack }) 
               />
               <span>
                 <strong>10 Questions</strong>
-                <small>1000 max points (≈17 min)</small>
               </span>
             </label>
           </div>

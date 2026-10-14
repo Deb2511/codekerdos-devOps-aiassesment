@@ -6,7 +6,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #16203b 0%, #0f1628 100%);
 }
 
 .student-form-card {
@@ -53,8 +53,8 @@
 
 .form-group input:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: #16203b;
+  box-shadow: 0 0 0 3px rgba(22, 32, 59, 0.1);
 }
 
 .form-group input.input-error {
@@ -70,7 +70,7 @@
 
 .form-note {
   background: #f9f9f9;
-  border-left: 4px solid #667eea;
+  border-left: 4px solid #16203b;
   padding: 1rem;
   border-radius: 6px;
   color: #666;
@@ -105,13 +105,13 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #16203b 0%, #0f1628 100%);
   color: white;
 }
 
 .btn-primary:hover {
   transform: scale(1.02);
-  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 5px 15px rgba(22, 32, 59, 0.4);
 }
 
 @media (max-width: 768px) {

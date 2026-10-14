@@ -83,7 +83,7 @@ export const StudentForm: React.FC<StudentFormProps> = ({ onNext, onBack, assess
         </div>
 
         <p className="form-note">
-          📝 Your results will be saved using this email address so you can view them later.
+          Your results will be saved using this email address so you can view them later.
         </p>
 
         <div className="button-group">

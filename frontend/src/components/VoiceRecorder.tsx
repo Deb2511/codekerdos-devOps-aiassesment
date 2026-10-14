@@ -36,7 +36,7 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onAnswerReceived, 
       setIsListening(false);
       setTranscript('Listening... speak now');
       finalTranscriptRef.current = '';
-      console.log('🎤 Recording started...');
+      console.log('Recording started...');
 
       listeningTimeoutRef.current = setTimeout(() => {
         setIsListening(true);
@@ -45,11 +45,11 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onAnswerReceived, 
     };
 
     recognition.onaudiostart = () => {
-      console.log('🎙️ Audio input started');
+      console.log('Audio input started');
     };
 
     recognition.onsoundstart = () => {
-      console.log('🔊 Sound detected');
+      console.log('Sound detected');
       setIsListening(true);
       setTranscript('Processing... speak more if needed');
       if (listeningTimeoutRef.current) clearTimeout(listeningTimeoutRef.current);
@@ -73,14 +73,14 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onAnswerReceived, 
 
       const displayText = finalTranscriptRef.current.trim() + (interimTranscript ? ' | ' + interimTranscript : '');
       setTranscript(displayText || 'Listening...');
-      console.log('📝 Transcript:', displayText);
+      console.log('Transcript:', displayText);
     };
 
     recognition.onerror = (event: any) => {
-      console.error('🎤 Speech recognition error:', event.error);
+      console.error('Speech recognition error:', event.error);
 
       if (event.error === 'no-speech') {
-        console.warn('⚠️ No speech detected. Make sure:');
+        console.warn('No speech detected. Make sure:');
         console.warn('  1. Microphone is connected and enabled');
         console.warn('  2. Browser has microphone permission');
         console.warn('  3. Speak clearly and loud enough');
@@ -95,7 +95,7 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onAnswerReceived, 
     };
 
     recognition.onend = () => {
-      console.log('🛑 Recording ended');
+      console.log('Recording ended');
       setIsRecording(false);
       setIsListening(false);
       if (listeningTimeoutRef.current) clearTimeout(listeningTimeoutRef.current);
@@ -106,6 +106,12 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onAnswerReceived, 
 
     return () => {
       if (listeningTimeoutRef.current) clearTimeout(listeningTimeoutRef.current);
+      // Stop any active recognition so a previous question's speech can't land in the next question
+      try {
+        recognition.abort();
+      } catch (err) {
+        console.error('Error aborting recognition on unmount:', err);
+      }
     };
   }, []);
 
@@ -135,7 +141,7 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onAnswerReceived, 
     try {
       recognitionRef.current?.stop();
       const cleanTranscript = finalTranscriptRef.current.trim();
-      console.log('🛑 Stop recording. Final transcript:', cleanTranscript, 'Length:', cleanTranscript.length);
+      console.log('Stop recording. Final transcript:', cleanTranscript, 'Length:', cleanTranscript.length);
 
       if (cleanTranscript.length > 20) {
         onAnswerReceived(cleanTranscript);
@@ -158,7 +164,7 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onAnswerReceived, 
     return (
       <div className="voice-recorder">
         <div className="browser-not-supported">
-          <h3>🎤 Voice Mode Not Supported</h3>
+          <h3>Voice Mode Not Supported</h3>
           <p>Your browser doesn't support speech recognition.</p>
           <p>Supported browsers: Chrome, Edge, Safari (iOS 14.5+), Opera</p>
           <p>Please use text mode instead.</p>
@@ -170,7 +176,7 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onAnswerReceived, 
   return (
     <div className="voice-recorder">
       <div className="recorder-info">
-        <h3>🎤 Voice Answer Mode</h3>
+        <h3>Voice Answer Mode</h3>
         <p>Speak your answer naturally. The system will transcribe in real-time.</p>
       </div>
 
@@ -178,7 +184,7 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onAnswerReceived, 
         <div className="transcript-content">
           {transcript || 'Click "Start Recording" and speak your answer...'}
         </div>
-        {isRecording && <div className="recording-indicator">🔴 Recording...</div>}
+        {isRecording && <div className="recording-indicator">Recording...</div>}
         {confidence < 100 && !isRecording && (
           <div className="confidence-badge">Confidence: {confidence}%</div>
         )}
@@ -187,20 +193,20 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onAnswerReceived, 
       <div className="recorder-controls">
         {!isRecording ? (
           <button className="btn btn-voice-start" onClick={startRecording} disabled={!isActive}>
-            🎤 Start Recording
+            Start Recording
           </button>
         ) : (
           <button className="btn btn-voice-stop" onClick={stopRecording}>
-            ⏹️ Stop Recording
+            Stop Recording
           </button>
         )}
         <button className="btn btn-voice-clear" onClick={clearRecording} disabled={isRecording || !transcript}>
-          🗑️ Clear
+          Clear
         </button>
       </div>
 
       <div className="recorder-tips">
-        <h4>💡 Tips:</h4>
+        <h4>Tips:</h4>
         <ul>
           <li>Speak clearly and at a normal pace</li>
           <li>Pause briefly between sentences</li>
@@ -211,7 +217,7 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onAnswerReceived, 
       </div>
 
       <div className="privacy-notice">
-        <h4>🔒 Privacy Notice</h4>
+        <h4>Privacy Notice</h4>
         <p>
           Your voice is encrypted and sent to Google's servers for transcription.
           Audio is not stored by CodeKerdos.

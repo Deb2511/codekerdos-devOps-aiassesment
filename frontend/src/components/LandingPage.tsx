@@ -11,13 +11,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectSelf, onSelect
   return (
     <div className="landing-container">
       <div className="landing-header">
-        <h1>🚀 CodeKerdos DevOps Assessment</h1>
+        <img src={`${process.env.PUBLIC_URL}/footer-logo.png`} alt="CodeKerdos logo" className="brand-logo" />
+        <h1>CodeKerdos DevOps Assessment</h1>
         <p>Evaluate your DevOps skills with scenario-based questions</p>
       </div>
 
       <div className="options-grid">
         <div className="option-card" onClick={onSelectSelf}>
-          <div className="option-icon">📚</div>
           <h2>Self Assessment</h2>
           <p>Test your knowledge across fundamental DevOps topics</p>
           <ul className="topics-list">
@@ -30,12 +30,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectSelf, onSelect
             <li>Kubernetes</li>
             <li>CI/CD</li>
             <li>Observability</li>
+            <li>SRE</li>
           </ul>
           <button className="btn btn-primary">Start Self Assessment →</button>
         </div>
 
         <div className="option-card" onClick={onSelectJD}>
-          <div className="option-icon">💼</div>
           <h2>JD-Based Assessment</h2>
           <p>Get evaluated against a specific job description</p>
           <div className="jd-info">
@@ -45,7 +45,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectSelf, onSelect
         </div>
 
         <div className="option-card" onClick={onSelectLeaderboard}>
-          <div className="option-icon">🏆</div>
           <h2>Leaderboard</h2>
           <p>See how you rank among peers</p>
           <div className="leaderboard-info">
@@ -54,6 +53,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectSelf, onSelect
           <button className="btn btn-primary">View Leaderboard →</button>
         </div>
       </div>
+
+      <footer className="landing-footer">
+        <img src={`${process.env.PUBLIC_URL}/footer-logo.png`} alt="CodeKerdos logo" className="footer-logo" />
+        <span>CodeKerdos DevOps Assessment Platform</span>
+      </footer>
     </div>
   );
 };
