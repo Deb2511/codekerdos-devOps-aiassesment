@@ -6,6 +6,7 @@ import { initializeDatabase } from './db';
 import assessmentRoutes from './routes/assessments';
 import resultsRoutes from './routes/results';
 import leaderboardRoutes from './routes/leaderboard';
+import { startRetentionJob } from './services/retentionService';
 
 const app = express();
 
@@ -41,6 +42,8 @@ async function start() {
     console.log('Initializing database...');
     await initializeDatabase();
     console.log('Database initialized');
+
+    startRetentionJob();
 
     app.listen(config.PORT, () => {
       console.log(`Server running on port ${config.PORT} in ${config.NODE_ENV} mode`);

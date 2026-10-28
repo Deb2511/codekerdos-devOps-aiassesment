@@ -3,7 +3,7 @@ import { config } from '../config';
 import { generateQuestions, evaluateAnswers, EvaluationResult } from '../services/claudeService';
 import { EvaluationItem } from '../utils/prompts';
 import { buildTopicPlan, buildFocusPlan } from '../utils/topicPlan';
-import { getOrCreateStudent, createAssessment, updateAssessmentWithResults, getAssessmentById } from '../services/dbService';
+import { getOrCreateStudent, createAssessment, updateAssessmentWithResults, getAssessmentById, createAuditRecord, completeAuditRecord } from '../services/dbService';
 import { validateEmail, validateName, validateDifficulty, validateTopics, validateNumQuestions, validateJDText } from '../utils/validation';
 
 const router = Router();
@@ -66,6 +66,16 @@ router.post('/start', async (req: Request<{}, {}, StartAssessmentRequest>, res: 
       difficulty: difficulty as 'junior' | 'senior',
       topics,
       questions,
+      tokens,
+    });
+
+    await createAuditRecord({
+      assessment_id: assessment.id,
+      student_name: name,
+      assessment_type: 'self',
+      topics,
+      question_count: questions.length,
+      total_tokens: tokens.total_tokens,
     });
 
     res.json({
@@ -124,6 +134,16 @@ router.post('/jd-start', async (req: Request<{}, {}, JDAssessmentRequest>, res: 
       topics,
       questions,
       jd_text,
+      tokens,
+    });
+
+    await createAuditRecord({
+      assessment_id: assessment.id,
+      student_name: name,
+      assessment_type: 'jd',
+      topics: null,
+      question_count: questions.length,
+      total_tokens: tokens.total_tokens,
     });
 
     res.json({
@@ -151,12 +171,22 @@ router.post('/:assessment_id/submit', async (req: Request<{ assessment_id: strin
       return res.status(404).json({ error: 'Assessment not found' });
     }
 
+    // An assessment can only be submitted once
+    if (assessment.completed_at) {
+      return res.status(409).json({ error: 'Assessment has already been submitted' });
+    }
+
     // Validate answers
     if (!answers || typeof answers !== 'object') {
       return res.status(400).json({ error: 'Invalid answers format' });
     }
     if (typeof answer_sources !== 'object' || answer_sources === null) {
       return res.status(400).json({ error: 'Invalid answer_sources format' });
+    }
+    for (const [questionId, source] of Object.entries(answer_sources)) {
+      if (source !== 'voice' && source !== 'typed') {
+        return res.status(400).json({ error: `Invalid answer_sources value for question ${questionId}. Use "voice" or "typed".` });
+      }
     }
 
     // Spoken answers are repaired by the evaluator; typed answers are scored as written
@@ -252,10 +282,16 @@ router.post('/:assessment_id/submit', async (req: Request<{ assessment_id: strin
       plagiarism_risk: result.plagiarism_risk,
       plagiarism_notes: result.plagiarism_notes || '',
       tokens_used: {
-        generation: assessment.questions.length * 100, // Approximate
+        generation: assessment.tokens_used?.generation ?? null,
         evaluation: tokens,
-        total: tokens.total_tokens,
+        total: (assessment.tokens_used?.generation?.total_tokens ?? 0) + tokens.total_tokens,
       },
+    });
+
+    await completeAuditRecord({
+      assessment_id,
+      score: finalScore,
+      total_tokens: (assessment.tokens_used?.generation?.total_tokens ?? 0) + tokens.total_tokens,
     });
 
     res.json({

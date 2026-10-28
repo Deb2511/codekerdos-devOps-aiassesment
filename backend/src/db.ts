@@ -97,6 +97,22 @@ export async function initializeDatabase(): Promise<void> {
       `);
     }
 
+    // Create audit table: one row per assessment, kept for records only.
+    // No foreign key, so audit rows survive if assessment rows are ever removed.
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS assessment_audit (
+        assessment_id UUID PRIMARY KEY,
+        student_name VARCHAR(255) NOT NULL,
+        assessment_type VARCHAR(10) NOT NULL,
+        topics JSONB,
+        question_count INTEGER NOT NULL,
+        score INTEGER,
+        total_tokens INTEGER,
+        started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        completed_at TIMESTAMPTZ
+      )
+    `);
+
     // Create leaderboard_entries table for monthly snapshots
     await client.query(`
       CREATE TABLE IF NOT EXISTS leaderboard_entries (

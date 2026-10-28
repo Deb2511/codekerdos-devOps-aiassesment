@@ -1,0 +1,56 @@
+# Same file runs on a laptop (testing) and on EC2 (production).
+#
+# First deployment (creates the tables with one backend, avoiding a startup race):
+#   BACKEND_REPLICAS=1 docker compose --env-file .env up -d --build
+#   docker compose --env-file .env up -d        (BACKEND_REPLICAS defaults to 2)
+#
+# Later deployments: docker compose --env-file .env up -d --build
+# Replica count is set in .env (BACKEND_REPLICAS) or on the command line.
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-codekudos}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # No published ports: only other containers on this network can reach the database
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d ${POSTGRES_DB:-codekudos}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ../backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-codekudos}
+    # Not published: only HAProxy reaches the backend containers
+    expose:
+      - '5000'
+    deploy:
+      replicas: ${BACKEND_REPLICAS:-2}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  haproxy:
+    image: haproxy:2.9-alpine
+    restart: unless-stopped
+    volumes:
+      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    ports:
+      # On EC2, set HAPROXY_BIND to the instance's private IP so only the VPC can reach it
+      - '${HAPROXY_BIND:-0.0.0.0}:${HAPROXY_PORT:-8080}:8080'
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

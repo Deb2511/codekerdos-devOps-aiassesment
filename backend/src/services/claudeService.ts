@@ -57,7 +57,8 @@ export async function generateQuestions(
           content: prompt,
         },
       ],
-    });
+    },
+    { timeout: config.CLAUDE_TIMEOUT_SECS * 1000 });
 
     // Extract text content
     const textContent = response.content.find((block) => block.type === 'text');

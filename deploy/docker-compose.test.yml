@@ -1,0 +1,24 @@
+# Test-only override. Points the backend at a mock Anthropic API so the full flow
+# can be tested without a real API key. Never use this file in production.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.test.yml --env-file .env up -d --build
+
+services:
+  mock-anthropic:
+    image: node:20-alpine
+    restart: unless-stopped
+    command: ['node', '/mock/mock-anthropic.js']
+    working_dir: /mock
+    environment:
+      PORT: '4010'
+    volumes:
+      - ../backend/test/e2e:/mock:ro
+    expose:
+      - '4010'
+
+  backend:
+    environment:
+      ANTHROPIC_BASE_URL: http://mock-anthropic:4010
+      ANTHROPIC_API_KEY: mock-key-for-tests
+    depends_on:
+      - mock-anthropic

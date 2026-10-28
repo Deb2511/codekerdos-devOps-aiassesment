@@ -61,11 +61,12 @@ export async function createAssessment(data: {
   topics: string[];
   questions: any[];
   jd_text?: string;
+  tokens: { input_tokens: number; output_tokens: number; total_tokens: number };
 }): Promise<Assessment> {
   const result = await queryOne(
     `INSERT INTO assessments
-    (student_email, assessment_type, difficulty, topics, questions, answers, score, per_topic_scores, feedback_json, jd_text)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+    (student_email, assessment_type, difficulty, topics, questions, answers, score, per_topic_scores, feedback_json, jd_text, tokens_used)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
     RETURNING *`,
     [
       data.student_email,
@@ -78,6 +79,8 @@ export async function createAssessment(data: {
       JSON.stringify({}), // Empty per_topic_scores
       JSON.stringify({}), // Empty feedback
       data.jd_text || null,
+      // Generation tokens are recorded now; evaluation tokens are added on submit
+      JSON.stringify({ generation: data.tokens, evaluation: null, total: data.tokens.total_tokens }),
     ]
   );
 
@@ -148,6 +151,43 @@ export async function getStudentAssessments(email: string, limit: number = 10): 
   );
 
   return results.map(parseAssessment);
+}
+
+// Audit records: one row per assessment, written at start and completed at submit
+export async function createAuditRecord(data: {
+  assessment_id: string;
+  student_name: string;
+  assessment_type: 'self' | 'jd';
+  topics: string[] | null;
+  question_count: number;
+  total_tokens: number;
+}): Promise<void> {
+  await query(
+    `INSERT INTO assessment_audit
+    (assessment_id, student_name, assessment_type, topics, question_count, total_tokens)
+    VALUES ($1, $2, $3, $4, $5, $6)`,
+    [
+      data.assessment_id,
+      data.student_name,
+      data.assessment_type,
+      data.topics === null ? null : JSON.stringify(data.topics),
+      data.question_count,
+      data.total_tokens,
+    ]
+  );
+}
+
+export async function completeAuditRecord(data: {
+  assessment_id: string;
+  score: number;
+  total_tokens: number;
+}): Promise<void> {
+  await query(
+    `UPDATE assessment_audit
+    SET score = $2, total_tokens = $3, completed_at = NOW()
+    WHERE assessment_id = $1`,
+    [data.assessment_id, data.score, data.total_tokens]
+  );
 }
 
 function parseAssessment(raw: any): Assessment {

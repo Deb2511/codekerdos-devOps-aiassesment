@@ -9,11 +9,14 @@ export const config = {
 
   // Database
   DATABASE_URL: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/codekudos',
+  // Records older than this many days are deleted by the retention job
+  RETENTION_DAYS: parseInt(process.env.RETENTION_DAYS || '30'),
 
   // Claude API
   ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY || '',
   CLAUDE_MODEL: 'claude-haiku-4-5-20251001',
-  CLAUDE_TIMEOUT_SECS: parseInt(process.env.CLAUDE_TIMEOUT_SECS || '15'),
+  // Timeout for question generation (start endpoints)
+  CLAUDE_TIMEOUT_SECS: parseInt(process.env.CLAUDE_TIMEOUT_SECS || '60'),
   CLAUDE_MAX_TOKENS: 2000,
   EVALUATION_MAX_TOKENS: 6000,
   EVALUATION_TIMEOUT_SECS: 90,
