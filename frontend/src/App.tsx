@@ -5,7 +5,6 @@ import { TopicSelector } from './components/TopicSelector';
 import { JDForm } from './components/JDForm';
 import { AssessmentFlow } from './components/AssessmentFlow';
 import { ResultsPage } from './components/ResultsPage';
-import { Leaderboard } from './components/Leaderboard';
 import { startSelfAssessment, startJDAssessment, submitAnswers } from './api/client';
 import { Question, SubmitAnswersResponse } from './types';
 import './App.css';
@@ -17,8 +16,7 @@ type AppState =
   | 'topic_selector'
   | 'jd_form'
   | 'assessment'
-  | 'results'
-  | 'leaderboard';
+  | 'results';
 
 interface AssessmentState {
   type: 'self' | 'jd';
@@ -49,10 +47,6 @@ export const App: React.FC = () => {
 
   const handleSelectJD = () => {
     setState('student_form_jd');
-  };
-
-  const handleSelectLeaderboard = () => {
-    setState('leaderboard');
   };
 
   // Student form handlers
@@ -216,10 +210,8 @@ export const App: React.FC = () => {
   return (
     <div className="app">
       {state === 'landing' && (
-        <LandingPage onSelectSelf={handleSelectSelf} onSelectJD={handleSelectJD} onSelectLeaderboard={handleSelectLeaderboard} />
+        <LandingPage onSelectSelf={handleSelectSelf} onSelectJD={handleSelectJD} />
       )}
-
-      {state === 'leaderboard' && <Leaderboard />}
 
       {state === 'student_form_self' && (
         <StudentForm onNext={handleStudentFormNext} onBack={handleBack} assessmentType="self" />

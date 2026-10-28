@@ -1,4 +1,5 @@
 import { query, queryOne, getClient } from '../db';
+import { config } from '../config';
 
 interface Student {
   id: string;
@@ -31,6 +32,7 @@ interface Assessment {
   jd_text: string | null;
   created_at: string;
   completed_at: string | null;
+  expires_at: string | null;
 }
 
 export async function getOrCreateStudent(name: string, email: string): Promise<Student> {
@@ -65,8 +67,8 @@ export async function createAssessment(data: {
 }): Promise<Assessment> {
   const result = await queryOne(
     `INSERT INTO assessments
-    (student_email, assessment_type, difficulty, topics, questions, answers, score, per_topic_scores, feedback_json, jd_text, tokens_used)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+    (student_email, assessment_type, difficulty, topics, questions, answers, score, per_topic_scores, feedback_json, jd_text, tokens_used, expires_at)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW() + make_interval(secs => $12::int))
     RETURNING *`,
     [
       data.student_email,
@@ -81,6 +83,8 @@ export async function createAssessment(data: {
       data.jd_text || null,
       // Generation tokens are recorded now; evaluation tokens are added on submit
       JSON.stringify({ generation: data.tokens, evaluation: null, total: data.tokens.total_tokens }),
+      // One question time per question, plus the grace period for submit
+      data.questions.length * config.QUESTION_TIME_SECS + config.SUBMIT_GRACE_SECS,
     ]
   );
 
@@ -200,5 +204,10 @@ function parseAssessment(raw: any): Assessment {
       typeof raw.per_topic_scores === 'string' ? JSON.parse(raw.per_topic_scores) : raw.per_topic_scores,
     feedback_json: typeof raw.feedback_json === 'string' ? JSON.parse(raw.feedback_json) : raw.feedback_json,
     tokens_used: typeof raw.tokens_used === 'string' ? JSON.parse(raw.tokens_used) : raw.tokens_used,
+    // Postgres returns DECIMAL columns as strings; the API contract uses numbers
+    plagiarism_deduction_percent:
+      raw.plagiarism_deduction_percent === null || raw.plagiarism_deduction_percent === undefined
+        ? raw.plagiarism_deduction_percent
+        : Number(raw.plagiarism_deduction_percent),
   };
 }

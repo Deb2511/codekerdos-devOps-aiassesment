@@ -91,19 +91,6 @@
   font-size: 0.95rem;
 }
 
-.leaderboard-info {
-  background: #f9f9f9;
-  padding: 1rem;
-  border-radius: 6px;
-  margin: 1rem 0;
-  border-left: 4px solid #ffd700;
-}
-
-.leaderboard-info p {
-  margin: 0;
-  font-size: 0.95rem;
-}
-
 .btn {
   padding: 0.75rem 1.5rem;
   border: none;

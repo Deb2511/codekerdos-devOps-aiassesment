@@ -17,12 +17,14 @@ export const config = {
   CLAUDE_MODEL: 'claude-haiku-4-5-20251001',
   // Timeout for question generation (start endpoints)
   CLAUDE_TIMEOUT_SECS: parseInt(process.env.CLAUDE_TIMEOUT_SECS || '60'),
-  CLAUDE_MAX_TOKENS: 2000,
+  CLAUDE_MAX_TOKENS: 4000, // Scenario questions with artifacts need more room than the old 2000
   EVALUATION_MAX_TOKENS: 6000,
   EVALUATION_TIMEOUT_SECS: 90,
 
   // Assessment Configuration
-  ASSESSMENT_TIMEOUT_MINS: 5,
+  // Each question has QUESTION_TIME_SECS. A submit is accepted until the total time plus SUBMIT_GRACE_SECS.
+  QUESTION_TIME_SECS: 300,
+  SUBMIT_GRACE_SECS: 180,
   QUESTION_COUNT_OPTIONS: [6, 8, 10] as const,
   DEFAULT_QUESTION_COUNT: 6,
 

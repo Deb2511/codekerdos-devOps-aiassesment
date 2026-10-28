@@ -97,15 +97,3 @@ export async function getStudentAssessments(email: string, limit: number = 10): 
   const data = await response.json();
   return data.assessments;
 }
-
-export async function getLeaderboard(month?: string): Promise<any> {
-  const url = month ? `${API_URL}/leaderboard?month=${month}` : `${API_URL}/leaderboard`;
-  const response = await fetch(url);
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to fetch leaderboard');
-  }
-
-  return response.json();
-}

@@ -5,7 +5,6 @@ import { config } from './config';
 import { initializeDatabase } from './db';
 import assessmentRoutes from './routes/assessments';
 import resultsRoutes from './routes/results';
-import leaderboardRoutes from './routes/leaderboard';
 import { startRetentionJob } from './services/retentionService';
 
 const app = express();
@@ -23,7 +22,6 @@ app.get('/health', (req, res) => {
 // API Routes
 app.use('/api/assessments', assessmentRoutes);
 app.use('/api/results', resultsRoutes);
-app.use('/api/leaderboard', leaderboardRoutes);
 
 // 404 handler
 app.use((req, res) => {

@@ -83,6 +83,7 @@ router.post('/start', async (req: Request<{}, {}, StartAssessmentRequest>, res: 
       questions: questions.map((q) => ({ id: q.id, question: q.question, topic: q.topic })),
       total_questions: questions.length,
       tokens_used: tokens,
+      expires_at: assessment.expires_at,
     });
   } catch (error) {
     console.error('Error starting assessment:', error);
@@ -152,6 +153,7 @@ router.post('/jd-start', async (req: Request<{}, {}, JDAssessmentRequest>, res: 
       total_questions: questions.length,
       inferred_topics: topics,
       tokens_used: tokens,
+      expires_at: assessment.expires_at,
     });
   } catch (error) {
     console.error('Error starting JD assessment:', error);
@@ -174,6 +176,11 @@ router.post('/:assessment_id/submit', async (req: Request<{ assessment_id: strin
     // An assessment can only be submitted once
     if (assessment.completed_at) {
       return res.status(409).json({ error: 'Assessment has already been submitted' });
+    }
+
+    // The time limit covers the whole assessment, plus a grace period for network delay
+    if (assessment.expires_at && new Date(assessment.expires_at).getTime() < Date.now()) {
+      return res.status(410).json({ error: 'Time limit exceeded. This assessment can no longer be submitted.' });
     }
 
     // Validate answers

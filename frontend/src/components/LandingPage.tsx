@@ -4,10 +4,9 @@ import './LandingPage.css';
 interface LandingPageProps {
   onSelectSelf: () => void;
   onSelectJD: () => void;
-  onSelectLeaderboard: () => void;
 }
 
-export const LandingPage: React.FC<LandingPageProps> = ({ onSelectSelf, onSelectJD, onSelectLeaderboard }) => {
+export const LandingPage: React.FC<LandingPageProps> = ({ onSelectSelf, onSelectJD }) => {
   return (
     <div className="landing-container">
       <div className="landing-header">
@@ -42,15 +41,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectSelf, onSelect
             <p>Paste your DevOps job description and receive custom questions tailored to the role requirements.</p>
           </div>
           <button className="btn btn-primary">Assess for JD →</button>
-        </div>
-
-        <div className="option-card" onClick={onSelectLeaderboard}>
-          <h2>Leaderboard</h2>
-          <p>See how you rank among peers</p>
-          <div className="leaderboard-info">
-            <p>View monthly rankings of top performers and track your progress across assessments.</p>
-          </div>
-          <button className="btn btn-primary">View Leaderboard →</button>
         </div>
       </div>
 

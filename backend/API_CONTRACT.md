@@ -138,9 +138,19 @@ Every error has the same shape: `{ "error": "message" }`.
 | `400` | Invalid input. The message names the field. |
 | `404` | Assessment not found. |
 | `409` | Assessment already submitted. Do not resubmit. |
+| `410` | Time limit exceeded. The assessment can no longer be submitted. Show the student that time has run out. |
 | `500` | Failed to start or evaluate. Safe to show the student a retry option. |
 
 A `500` on start usually means no records were created, so a retry is safe. A `500` on submit before results are saved leaves the assessment open, so a retry is safe. The one exception is a database failure after the results are saved: the assessment is then marked submitted, and a retry returns `409`.
+
+## Time limit
+
+Each question has 5 minutes. The whole assessment therefore has a deadline of 5 minutes times the number of questions, plus a 3 minute grace period for network delay. For 6 questions that is 33 minutes; for 8 questions, 43 minutes.
+
+- The start response includes `expires_at`, the deadline as an ISO timestamp. Show it to the student so the timer matches the server.
+- A submit that arrives after `expires_at` returns `410`. Nothing is scored or saved.
+- The browser timer moves the student from question to question. The server only checks the total time, at submit.
+- Assessments created before this rule have no deadline and can still be submitted.
 
 ## Timeouts and retries
 

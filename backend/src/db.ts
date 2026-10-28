@@ -97,6 +97,13 @@ export async function initializeDatabase(): Promise<void> {
       `);
     }
 
+    // Submit deadline. Rows created before this column existed have no deadline (NULL).
+    if (!columnNames.includes('expires_at')) {
+      await client.query(`
+        ALTER TABLE assessments ADD COLUMN expires_at TIMESTAMPTZ
+      `);
+    }
+
     // Create audit table: one row per assessment, kept for records only.
     // No foreign key, so audit rows survive if assessment rows are ever removed.
     await client.query(`
@@ -113,31 +120,9 @@ export async function initializeDatabase(): Promise<void> {
       )
     `);
 
-    // Create leaderboard_entries table for monthly snapshots
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS leaderboard_entries (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        rank INTEGER NOT NULL,
-        student_email VARCHAR(255) NOT NULL,
-        student_name VARCHAR(255) NOT NULL,
-        total_score INTEGER NOT NULL,
-        num_assessments INTEGER DEFAULT 1,
-        month_year DATE NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-        UNIQUE(student_email, month_year)
-      )
-    `);
-
-    // Create index for leaderboard queries
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_assessments_email_date
       ON assessments(student_email, created_at DESC)
-    `);
-
-    await client.query(`
-      CREATE INDEX IF NOT EXISTS idx_leaderboard_month_rank
-      ON leaderboard_entries(month_year, rank)
     `);
 
     console.log('Database initialized successfully');

@@ -1,356 +1,238 @@
-# CodeKerdos DevOps Assessment Platform
+# CodeKerdos Assessment Service
 
-A modern web-based DevOps assessment platform that evaluates technical knowledge through scenario-based questions. Candidates can choose between self-assessments and job-description-based assessments with immediate AI-powered feedback.
+This service generates DevOps assessment questions with Claude, scores student answers, and returns the scores and AI feedback. The CodeKerdos backend calls it server-to-server. Students never call it directly.
 
-## Features
+It stores each assessment in PostgreSQL for 30 days and keeps a small audit record for each one.
 
-- **Dual Assessment Modes**
-  - **Self Assessment**: Test knowledge across 9 DevOps topics (Linux, Networking, Git, AWS, Terraform, Docker, Kubernetes, CI/CD, Observability)
-  - **JD-Based Assessment**: Get evaluated against specific job description requirements
+Students choose a self assessment (topics such as Docker, Kubernetes, Linux or SRE) or a job-description assessment (a pasted JD). Each assessment has six, eight or ten scenario questions, at junior or senior level.
 
-- **Two Difficulty Levels**: Junior and Senior with appropriate question complexity
+| Document | Read it for |
+|---|---|
+| This README | Deploying and operating the service |
+| [backend/API_CONTRACT.md](backend/API_CONTRACT.md) | Endpoints, request and response shapes, errors, timeouts, stored data |
 
-- **Scenario-Based Questions**: Product company-style interview questions focusing on real-world scenarios
+## How an assessment works
 
-- **Instant AI Evaluation**: Claude AI evaluates answers and provides detailed feedback
+1. **Start.** The CodeKerdos backend calls `/api/assessments/start` or `/api/assessments/jd-start`. Claude writes the questions. The response includes the questions, the `assessment_id` and `expires_at`.
+2. **Answer.** The student answers in the CodeKerdos frontend, typed or spoken. Spoken answers arrive as text with `answer_sources` marked `voice`, and Claude repairs transcription errors in those answers only.
+3. **Submit.** The CodeKerdos backend calls `/api/assessments/{id}/submit`. Claude scores each answer from 0 to 10 against the level rubric, and writes one or two sentences of feedback per question, plus an overall summary of two to three sentences.
+4. **Score.** The server adds the per-question scores, applies any plagiarism deduction, and calculates the percentage out of 10 points per question. The arithmetic happens in code, not in the model.
 
-- **Plagiarism Detection**: Automatic plagiarism risk assessment
+**Levels.** Junior uses the beginner rubric and senior uses the intermediate rubric, both taken from the SRE assessment bot.
 
-- **Database Storage**: PostgreSQL backend stores student results with name, email, topics, scores, and feedback
+**Time limit.** Each question has 5 minutes, and the browser timer moves the student through the questions. The server allows a submit until the total time plus a 3 minute grace period, that is 33 minutes for six questions. A later submit returns `410`, and nothing is scored or saved.
 
-- **No Question History**: Fresh questions generated each time (no canned questions)
+**Single submit.** A second submit returns `409`. A failed evaluation leaves the assessment open, so the student can retry.
 
-- **No Interim Feedback**: Results shown only at the end to prevent answer influence
-
-## Technology Stack
-
-### Backend
-- **Runtime**: Node.js with TypeScript
-- **Framework**: Express.js
-- **Database**: PostgreSQL
-- **AI**: Anthropic Claude API (Haiku model)
-
-### Frontend
-- **Framework**: React 18+ with TypeScript
-- **Styling**: CSS3 with responsive design
-- **State Management**: React hooks
-
-### Infrastructure
-- **Database Setup**: Docker Compose with PostgreSQL 15
-- **Development**: Local development environment
-
-## Project Structure
+## Architecture
 
 ```
-codekudos-assessment/
-├── backend/
-│   ├── src/
-│   │   ├── server.ts           # Express server setup
-│   │   ├── config.ts           # Configuration & constants
-│   │   ├── db.ts               # PostgreSQL connection
-│   │   ├── routes/
-│   │   │   ├── assessments.ts  # Assessment endpoints
-│   │   │   └── results.ts      # Results endpoints
-│   │   ├── services/
-│   │   │   ├── claudeService.ts # Question generation & evaluation
-│   │   │   └── dbService.ts     # Database operations
-│   │   └── utils/
-│   │       ├── prompts.ts      # Claude prompts
-│   │       └── validation.ts   # Input validation
-│   ├── package.json
-│   ├── tsconfig.json
-│   └── .env.example
-│
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── LandingPage.tsx
-│   │   │   ├── StudentForm.tsx
-│   │   │   ├── TopicSelector.tsx
-│   │   │   ├── JDForm.tsx
-│   │   │   ├── AssessmentFlow.tsx
-│   │   │   ├── ResultsPage.tsx
-│   │   │   └── Timer.tsx
-│   │   ├── api/
-│   │   │   └── client.ts
-│   │   ├── types/
-│   │   │   └── index.ts
-│   │   ├── App.tsx
-│   │   └── App.css
-│   ├── public/
-│   │   └── index.html
-│   ├── package.json
-│   ├── tsconfig.json
-│   └── .env.example
-│
-├── docker-compose.yml
-└── README.md
+CodeKerdos frontend (browser)
+        |
+CodeKerdos backend  (their server)
+        |  HTTP, private network only
+        v
+HAProxy  (port 8080)
+        |
+   +----+----+
+   v         v
+backend-1  backend-2     Node.js (Express), one image, two containers
+   |         |
+   +----+----+
+        v
+PostgreSQL 15  (named Docker volume)
+        |
+        v
+Anthropic API  (question generation and evaluation)
 ```
 
-## Quick Start
+- Each backend container is stateless. All state lives in PostgreSQL, so containers can be added or removed freely.
+- Only HAProxy publishes a port. The backend containers and the database have no published ports.
+- Every API call waits for its result. There is no polling and no callback.
 
-### Prerequisites
-- Node.js 16+ and npm/yarn
-- PostgreSQL 13+ (or Docker)
-- Anthropic API key
+## Repository layout
 
-### 1. Database Setup
+Paths below are relative to the repository root.
 
-Using Docker Compose:
-```bash
-docker-compose up -d
+```
+backend/                 Node.js service (TypeScript, Express, pg)
+  src/                   Application code
+  API_CONTRACT.md        Integration contract for the CodeKerdos team
+  Dockerfile             Builds the backend image
+  test/e2e/              End-to-end test and a mock Anthropic API
+deploy/                  Everything needed to run the service
+  docker-compose.yml     Production stack: PostgreSQL, backend replicas, HAProxy
+  docker-compose.test.yml  Test-only override that adds a mock Anthropic API
+  haproxy.cfg            Load balancer configuration
+  .env.example           Settings template (copy to .env)
+frontend/                Example React client, for reference only. Not deployed.
 ```
 
-The PostgreSQL database will be available at `localhost:5432` with credentials:
-- User: `postgres`
-- Password: `postgres`
-- Database: `codekudos`
+## Prerequisites
 
-### 2. Backend Setup
-
-```bash
-cd backend
-
-# Copy environment configuration
-cp .env.example .env
-
-# Edit .env and add your Anthropic API key
-# ANTHROPIC_API_KEY=sk-ant-your-key-here
-
-# Install dependencies
-npm install
-
-# Development mode with auto-reload
-npm run dev
-
-# Or build and start
-npm run build
-npm start
-```
-
-Backend runs on `http://localhost:5000`
-
-### 3. Frontend Setup
-
-```bash
-cd frontend
-
-# Copy environment configuration
-cp .env.example .env
-
-# Install dependencies
-npm install
-
-# Development mode with hot reload
-npm start
-
-# Or build for production
-npm run build
-```
-
-Frontend runs on `http://localhost:3000`
-
-## API Endpoints
-
-### Assessment Endpoints
-
-**POST /api/assessments/start**
-- Start a self-assessment
-- Request: `{name, email, topics[], difficulty, num_questions_per_topic}`
-- Response: `{assessment_id, questions[], total_questions, tokens_used}`
-
-**POST /api/assessments/jd-start**
-- Start a JD-based assessment
-- Request: `{name, email, jd_text, difficulty, num_questions?}`
-- Response: `{assessment_id, questions[], total_questions, inferred_topics, tokens_used}`
-
-**POST /api/assessments/:id/submit**
-- Submit answers and get evaluation
-- Request: `{answers: {q_id: "answer text", ...}}`
-- Response: `{score, per_topic_scores, feedback, individual_scores, plagiarism_risk, plagiarism_notes}`
-
-### Results Endpoints
-
-**GET /api/results/assessment/:id**
-- Fetch a specific assessment result
-- Response: Full assessment record with all details
-
-**GET /api/results/student/:email**
-- Fetch all assessments for a student
-- Response: `{email, assessments[], total}`
-
-## Database Schema
-
-### students table
-```sql
-CREATE TABLE students (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name VARCHAR(255) NOT NULL,
-  email VARCHAR(255) NOT NULL UNIQUE,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-### assessments table
-```sql
-CREATE TABLE assessments (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  student_email VARCHAR(255) NOT NULL REFERENCES students(email),
-  assessment_type VARCHAR(50) NOT NULL, -- 'self' or 'jd'
-  difficulty VARCHAR(20) NOT NULL, -- 'junior' or 'senior'
-  topics JSONB NOT NULL, -- ["linux", "kubernetes", ...]
-  questions JSONB NOT NULL, -- Generated questions
-  answers JSONB NOT NULL, -- Candidate's answers
-  score INTEGER NOT NULL, -- 0-100
-  per_topic_scores JSONB NOT NULL,
-  feedback_json JSONB NOT NULL,
-  plagiarism_risk VARCHAR(20),
-  plagiarism_notes TEXT,
-  tokens_used JSONB,
-  jd_text TEXT, -- For JD assessments
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  completed_at TIMESTAMP
-);
-```
-
-## Assessment Flow
-
-1. **Landing Page** - Choose assessment type (Self or JD)
-2. **Student Info** - Enter name and email
-3. **Configuration**
-   - Self: Select topics (1+), difficulty, questions per topic
-   - JD: Paste job description, select difficulty
-4. **Question Generation** - Claude AI generates scenario-based questions
-5. **Assessment** - Answer questions one at a time with 2-min timer
-6. **Evaluation** - Claude AI scores answers and detects plagiarism
-7. **Results** - Display score, feedback, per-topic breakdown, plagiarism risk
+- Docker Engine 24 or later, with the Compose plugin (`docker compose version` should work)
+- Outbound HTTPS to `api.anthropic.com` from the server
+- An Anthropic API key
+- Network access from the CodeKerdos backend to the service's private IP and port
 
 ## Configuration
 
-### Backend Environment Variables
+All settings live in `deploy/.env`. Create it from the template:
 
-```bash
-PORT=5000
-NODE_ENV=development
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/codekudos
-ANTHROPIC_API_KEY=sk-ant-your-key-here
-CLAUDE_TIMEOUT_SECS=15
+```
+cd deploy
+cp .env.example .env
 ```
 
-### Frontend Environment Variables
+| Variable | Required | Purpose |
+|---|---|---|
+| `POSTGRES_PASSWORD` | yes | Database password. Use letters and digits only, because it is part of a connection URL. |
+| `POSTGRES_DB` | no | Database name. Default `codekudos`. |
+| `ANTHROPIC_API_KEY` | yes | Claude API key. Set it only on the server. |
+| `CLAUDE_TIMEOUT_SECS` | no | Timeout for question generation. Default `60`. |
+| `RETENTION_DAYS` | no | Records older than this are deleted. Default `30`. |
+| `HAPROXY_BIND` | yes | IP address HAProxy listens on. Use the instance's private IP in production, and `127.0.0.1` on a laptop. |
+| `HAPROXY_PORT` | no | Port HAProxy listens on. Default `8080`. |
+| `BACKEND_REPLICAS` | no | Number of backend containers. Default `2`. |
 
-```bash
-REACT_APP_API_URL=http://localhost:5000/api
-REACT_APP_ASSESSMENT_TIMEOUT_MINS=2
+Keep `deploy/.env` private: `chmod 600 deploy/.env` on the server. Git ignores it, and the Docker image excludes it.
+
+## Deploying on EC2
+
+The steps below assume an Ubuntu instance in the same VPC as the CodeKerdos backend.
+
+1. **Install Docker and the Compose plugin.** Follow Docker's official instructions for Ubuntu, then confirm with `docker compose version`.
+
+2. **Copy the code to the server.** Clone the repository, or copy the `backend/` and `deploy/` folders.
+
+3. **Create the settings file.**
+   ```
+   cd deploy
+   cp .env.example .env
+   nano .env
+   ```
+   Set `POSTGRES_PASSWORD`, `ANTHROPIC_API_KEY`, and `HAPROXY_BIND` (the instance's private IP). Then restrict the file:
+   ```
+   chmod 600 .env
+   ```
+
+4. **Start with one backend.** A single container creates the database tables. Starting two at the same moment can make both try at once.
+   ```
+   BACKEND_REPLICAS=1 docker compose -f docker-compose.yml --env-file .env up -d --build
+   ```
+   Wait about 20 seconds, then check that the backend is healthy:
+   ```
+   docker compose -f docker-compose.yml --env-file .env ps
+   curl http://<private-ip>:8080/health
+   ```
+   The expected response is `{"status":"ok", ...}`.
+
+5. **Scale to two backends.** Set `BACKEND_REPLICAS=2` in `.env` (or leave the default), then run:
+   ```
+   docker compose -f docker-compose.yml --env-file .env up -d
+   ```
+
+6. **Open the port to the CodeKerdos backend only.** In the instance's security group, allow TCP `8080` from the security group or subnet used by the CodeKerdos backend. Do not open it to the internet.
+
+7. **Confirm end to end.** Ask the CodeKerdos team to make one start call and one submit call from their backend. Check that the row appears in `assessment_audit`.
+
+## Running locally (laptop test)
+
+Use the same files with a local address and a throwaway password:
+
+```
+cd deploy
+cat > .env <<'EOF'
+POSTGRES_PASSWORD=localtest123
+POSTGRES_DB=codekudos
+ANTHROPIC_API_KEY=your-key-here
+CLAUDE_TIMEOUT_SECS=60
+RETENTION_DAYS=30
+HAPROXY_BIND=127.0.0.1
+HAPROXY_PORT=8080
+BACKEND_REPLICAS=2
+NODE_ENV=production
+EOF
+docker compose -f docker-compose.yml --env-file .env up -d --build
 ```
 
-## Topics Supported
+Then `curl http://localhost:8080/health`. Delete `.env` when you finish, or keep it out of version control.
 
-### Self Assessment
-- **Linux**: System administration, commands, troubleshooting
-- **Networking**: DNS, load balancing, network policies
-- **Git**: Version control, branching, collaboration
-- **AWS**: Cloud services, infrastructure
-- **Terraform**: IaC, state management
-- **Docker**: Containers, images, networking
-- **Kubernetes**: Architecture, deployments
-- **CI/CD**: Pipeline design, automation
-- **Observability**: Monitoring, logging, metrics
+To run without a real API key, use the test override, which points the backend at a mock:
 
-### JD-Based Assessment
-- Topics are extracted from the provided job description
-- Questions are generated to match role requirements
-
-## Question Characteristics
-
-- **Scenario-Based**: Real production scenarios
-- **1-2 Sentences**: Concise, focused questions
-- **No Code**: No code snippets or scripts
-- **Action-Oriented**: "How would you...", "Design...", "Troubleshoot..."
-- **Difficulty-Appropriate**: Different depth for junior vs senior
-
-## Scoring
-
-- **Scale**: 0-100
-- **Calculation**: Average of per-topic scores
-- **Per-Question**: 0-10 scale evaluated by Claude
-- **Difficulty Adjustments**: Rubric adapts based on difficulty level
-
-## Plagiarism Detection
-
-Claude AI automatically flags suspicious answers based on:
-- Polished language inconsistent with other answers
-- Unusually long or structured responses
-- Suspicious phrase repetition
-- Overall writing consistency
-
-Risk levels: **none**, **low**, **high**
-
-## Future Enhancements
-
-- Leaderboard/dashboard for comparing scores
-- Email notifications on completion
-- Admin panel for analytics
-- Retry limits per student
-- Assessment history tracking
-- Score improvement tracking
-- PDF export of results
-- Integration with ATS systems
-
-## Troubleshooting
-
-### Backend Issues
-
-**Database connection fails**
-```bash
-# Verify Docker container is running
-docker ps
-
-# Check PostgreSQL logs
-docker logs codekudos-db
-
-# Verify credentials in .env
+```
+docker compose -f docker-compose.yml -f docker-compose.test.yml --env-file .env up -d --build
 ```
 
-**Claude API errors**
-```bash
-# Verify API key is correct
-# Check account has available credits
-# Verify network connectivity
+Never use `docker-compose.test.yml` on the server.
+
+## Running the end-to-end test
+
+**Against the real Claude API (default).** Start the normal stack with your real key in `deploy/.env`, then run from the repository root:
+
+```
+node backend/test/e2e/run-e2e.js
 ```
 
-### Frontend Issues
+**Without an API key (mock).** Start the test stack, then run in mock mode:
 
-**API connection fails**
-```bash
-# Verify backend is running on port 5000
-# Check REACT_APP_API_URL in .env
-# Check CORS is enabled (should be by default)
+```
+cd deploy
+docker compose -f docker-compose.yml -f docker-compose.test.yml --env-file .env up -d --build
+cd ..
+E2E_MODE=mock node backend/test/e2e/run-e2e.js
 ```
 
-**Styling issues**
-```bash
-# Clear npm cache: npm cache clean --force
-# Reinstall dependencies: rm -rf node_modules && npm install
+The test calls the API through HAProxy and checks the database through `psql`. It covers:
+
+- starting self and job description assessments, including validation errors
+- submitting answers with a mix of voice and typed sources, including the transcript repair
+- score calculation, stored token totals, and the repair log
+- the audit rows for both assessment types
+- rejecting a second submit with `409`
+- a Claude failure, which must leave no new records
+
+With the real API, the test checks structure and consistency rather than exact scores, because model output varies from run to run. It does not judge the quality of the questions or feedback. The mock mode also checks exact values and the Claude failure path, which the real mode skips.
+
+## Operating the service
+
+**Logs:**
+```
+docker compose -f docker-compose.yml --env-file .env logs -f backend
+docker compose -f docker-compose.yml --env-file .env logs -f haproxy
 ```
 
-## Production Deployment
+**Restart a service:**
+```
+docker compose -f docker-compose.yml --env-file .env restart backend
+```
 
-### Backend
-- Build: `npm run build`
-- Run: `npm start`
-- Environment: Set all `.env` variables
-- Database: Use managed PostgreSQL (AWS RDS, Azure, etc.)
+**Update to a new version:** pull the new code, then run
+```
+docker compose -f docker-compose.yml --env-file .env up -d --build
+```
+Each container restarts briefly during the update.
 
-### Frontend
-- Build: `npm run build`
-- Serve: Use static hosting (Vercel, Netlify, AWS S3, etc.)
-- Configure `REACT_APP_API_URL` to production backend
+**Stop the stack without losing data:** `docker compose -f docker-compose.yml --env-file .env down`. Do not add `-v`, because that deletes the database volume.
 
-## License
+**Retention:** a job runs inside each backend container at startup and then every 24 hours. It deletes assessments, audit rows and unused students older than `RETENTION_DAYS`. Each run is logged as `Retention (30 days): deleted {...}`.
 
-Proprietary - CodeKerdos DevOps Assessment Platform
+## Security notes
 
-## Support
+- The service has no authentication. Access is controlled by the network, so the port must stay private.
+- `ANTHROPIC_API_KEY` is read from `deploy/.env` only. It is never written to the image or to git.
+- The database has no published port. Only the backend containers can reach it.
+- Student names, emails and answers are personal data. A data processing agreement must cover this service before live use.
 
-For issues or questions, please contact the development team.
+## Known limitations
+
+- **Topics must not outnumber questions.** The topic plan gives each topic at least one question. If a student picks more topics than questions, the extra topic gets no question and its per-topic score is `null`. The fix is to reject such requests with a `400`. This is a known gap.
+- **The question count is not checked.** If Claude returns fewer or more questions than requested, the server accepts them. This hasn't been seen in testing, but it isn't guarded against.
+- **The audit row is written after the assessment row.** A database error between the two writes would leave an assessment with no audit row. This is unlikely, and it isn't covered by a test.
+- **Question quality is not guaranteed.** The prompt bans hints and invented details, and testing shows fewer leaks than before. A few questions may still hint at the answer or name the category of a problem. Artifact questions, such as a Dockerfile with a planted error, may contain more than one problem.
+- **Evaluation can be generous or harsh.** Scores come from the model, guided by the rubric. They are calibrated by testing, not by a human marker.
+- **The example frontend does not yet show the server deadline.** It still counts 5 minutes per question and does not use `expires_at`.
+- **Timeouts depend on Claude's speed.** A slow evaluation can take several minutes. HAProxy waits up to 300 seconds, and the CodeKerdos backend should wait at least that long on submit.
+- **Starting several backends at once can race.** Follow the one-then-two sequence in step 4 when deploying.
+- **Cost.** A six-question assessment costs roughly ₹1.5 at the list prices checked in testing (about $1 per million input tokens and $5 per million output tokens for Claude Haiku 4.5, at about ₹96 per dollar). Check the current prices before budgeting.
+- **Retention also applies to the audit table.** The audit table holds student names, so it follows the same 30 day limit.
